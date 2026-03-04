@@ -1,15 +1,20 @@
-FROM ubuntu:latest AS build
+# -------- STAGE 1: Build --------
+FROM maven:3.9.6-eclipse-temurin-17 AS build
 
-Run apt-get update
-Run apt-get install openjdk-17-jdk -y
+WORKDIR /app
 
-COPY ..
+COPY pom.xml .
+COPY src ./src
 
-RUN apt-get install maven -y
-Run mvn clear install
+RUN mvn clean package -DskipTests
+
+# -------- STAGE 2: Runtime --------
+FROM eclipse-temurin:17-jdk-alpine
+
+WORKDIR /app
+
+COPY --from=build /app/target/todolist-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 8080
-
-COPY --from=build /target/todolist-0.0.1-SNAPSHOT.jar app.jar
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
